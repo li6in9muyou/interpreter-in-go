@@ -25,13 +25,15 @@ type Identifier struct {
 	Value string
 }
 
+func (i *Identifier) expression() {}
+
 func (i *Identifier) TokenLiteral() string {
 	return i.Token.Literal
 }
 
 type LetStatement struct {
 	Token token.Token
-	Name  Identifier
+	Name  *Identifier
 	Value IExpr
 }
 

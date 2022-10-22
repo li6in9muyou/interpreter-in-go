@@ -71,12 +71,13 @@ func (parser *Parser) ParseProgram() (*ast.Program, error) {
 
 func (parser *Parser) tryLetStatement() (ast.LetStatement, error) {
 	var err error
-	stmt := ast.LetStatement{}
+	var n ast.Identifier
+	stmt := ast.LetStatement{Name: &n}
 
 	stmt.Token = parser.currentToken
 	parser.eatToken()
 
-	stmt.Name, err = parser.tryIdentExpr()
+	n, err = parser.tryIdentExpr()
 	if err != nil {
 		return stmt, err
 	}
