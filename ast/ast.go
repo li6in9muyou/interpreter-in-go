@@ -1,9 +1,13 @@
 package ast
 
-import "interpreter/token"
+import (
+	"bytes"
+	"interpreter/token"
+)
 
 type Node interface {
 	TokenLiteral() string
+	String() string
 }
 
 type Statement interface {
@@ -20,9 +24,21 @@ type Program struct {
 	Statements []Statement
 }
 
+func (p Program) String() string {
+	var out bytes.Buffer
+	for _, s := range p.Statements {
+		out.WriteString(s.String())
+	}
+	return out.String()
+}
+
 type Identifier struct {
 	Token token.Token
 	Value string
+}
+
+func (i *Identifier) String() string {
+	return i.Value
 }
 
 func (i *Identifier) expression() {}
@@ -43,6 +59,18 @@ func (statement *LetStatement) TokenLiteral() string {
 
 func (statement *LetStatement) statement() {}
 
+func (statement *LetStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(statement.TokenLiteral() + " ")
+	out.WriteString(statement.Name.String())
+	out.WriteString(" = ")
+	if statement.Value != nil {
+		out.WriteString(statement.Value.String())
+	}
+	out.WriteString(";")
+	return out.String()
+}
+
 type ReturnStatement struct {
 	Token token.Token
 	Value IExpr
@@ -53,3 +81,13 @@ func (r *ReturnStatement) TokenLiteral() string {
 }
 
 func (r *ReturnStatement) statement() {}
+
+func (r *ReturnStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(r.TokenLiteral() + " ")
+	if r.Value != nil {
+		out.WriteString(r.Value.String())
+	}
+	out.WriteString(";")
+	return out.String()
+}
