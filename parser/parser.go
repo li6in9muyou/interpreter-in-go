@@ -5,6 +5,7 @@ import (
 	"interpreter/ast"
 	"interpreter/lexer"
 	"interpreter/token"
+	"strconv"
 )
 
 type (
@@ -50,6 +51,7 @@ func New(lexer *lexer.Lexer) *Parser {
 
 	parser.prefixParseFunctions = make(map[token.Class]prefixParseFunction)
 	parser.addPrefixFn(token.IDENT, parser.tryIdentifierExpr)
+	parser.addPrefixFn(token.INT, parser.tryIntegerLiteralExpr)
 	return &parser
 }
 
@@ -202,5 +204,25 @@ func (parser *Parser) tryIdentifierExpr() ast.IExpr {
 	return &ast.Identifier{
 		Token: identifier,
 		Value: identifier.Literal,
+	}
+}
+
+func (parser *Parser) tryIntegerLiteralExpr() ast.IExpr {
+	t := parser.currentToken
+	parser.eatToken()
+
+	number, err := strconv.Atoi(t.Literal)
+	if err != nil {
+		parser.addError(fmt.Errorf(
+			"%s can not be parsed as base 10 integer", t.Literal,
+		))
+		return &ast.IntegerLiteral{
+			Token: token.New(token.ILLEGAL, t.Literal),
+			Value: 0,
+		}
+	}
+	return &ast.IntegerLiteral{
+		Token: t,
+		Value: number,
 	}
 }
