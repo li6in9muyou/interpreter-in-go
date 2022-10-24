@@ -3,7 +3,6 @@ package parser
 import (
 	"interpreter/ast"
 	"interpreter/lexer"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -148,8 +147,10 @@ func Test_parseIdentifierExpression(t *testing.T) {
 }
 
 func Test_parseIntegerLiteralExpression(t *testing.T) {
-	input := "1234;"
-	l := lexer.New(input)
+	const input = "1234"
+	const expectedNumber = 1234
+
+	l := lexer.New(input + ";")
 	p := New(&l)
 	program, _ := p.ParseProgram()
 	checkParserErrors(t, p)
@@ -166,11 +167,11 @@ func Test_parseIntegerLiteralExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("exp not *ast.IntegerLiteral. got=%T", stmt.Expression)
 	}
-	if number, _ := strconv.Atoi(input); literal.Value != number {
-		t.Errorf("literal.Value not %d. got=%d", 5, literal.Value)
+	if literal.Value != expectedNumber {
+		t.Errorf("literal.Value not %d. got=%d", expectedNumber, literal.Value)
 	}
 	if literal.TokenLiteral() != input {
-		t.Errorf("literal.TokenLiteral not %s. got=%s", "5",
+		t.Errorf("literal.TokenLiteral not %s. got=%s", input,
 			literal.TokenLiteral())
 	}
 }
