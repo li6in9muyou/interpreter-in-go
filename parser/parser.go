@@ -7,12 +7,27 @@ import (
 	"interpreter/token"
 )
 
+type (
+	prefixParseFunction func() ast.IExpr
+	infixParseFunction  func(expr ast.IExpr) ast.IExpr
+)
+
 type Parser struct {
-	lexer        *lexer.Lexer
-	currentToken token.Token
-	nextToken    token.Token
-	statements   []ast.Statement
-	errors       []error
+	lexer                *lexer.Lexer
+	currentToken         token.Token
+	nextToken            token.Token
+	statements           []ast.Statement
+	errors               []error
+	prefixParseFunctions map[token.Class]prefixParseFunction
+	infixParseFunctions  map[token.Class]infixParseFunction
+}
+
+func (parser *Parser) addPrefixFn(class token.Class, function prefixParseFunction) {
+	parser.prefixParseFunctions[class] = function
+}
+
+func (parser *Parser) addInfixFn(class token.Class, function infixParseFunction) {
+	parser.infixParseFunctions[class] = function
 }
 
 func (parser *Parser) Errors() []error {
@@ -32,6 +47,9 @@ func New(lexer *lexer.Lexer) *Parser {
 	}
 	parser.currentToken, _ = parser.lexer.NextToken()
 	parser.nextToken, _ = parser.lexer.NextToken()
+
+	parser.prefixParseFunctions = make(map[token.Class]prefixParseFunction)
+	parser.addPrefixFn(token.IDENT, parser.tryIdentifierExpr)
 	return &parser
 }
 
@@ -56,13 +74,18 @@ func (parser *Parser) ParseProgram() (*ast.Program, error) {
 						fmt.Errorf("%v", err)
 				}
 			}
+		case token.SEMICOLON:
+			{
+				parser.eatToken()
+			}
 		default:
 			{
-				parser.addError(fmt.Errorf(
-					"parser error: not implemented %+v",
-					parser.currentToken,
-				))
-				return &ast.Program{Statements: parser.statements}, nil
+				stmt, err := parser.tryExpressionStatement()
+				parser.statements = append(parser.statements, &stmt)
+				if err != nil {
+					return &ast.Program{Statements: parser.statements},
+						fmt.Errorf("%v", err)
+				}
 			}
 		}
 	}
@@ -142,4 +165,42 @@ func (parser *Parser) tryReturnStatement() (ast.ReturnStatement, error) {
 	parser.eatToken()
 
 	return stmt, nil
+}
+
+const (
+	_ int = iota
+	LOWEST
+	EQUALS
+	LESSGREATER
+	SUM
+	PRODUCT
+	PREFIX
+	CALL
+)
+
+func (parser *Parser) tryExpressionStatement() (ast.ExpressionStatement, error) {
+	stmt := ast.ExpressionStatement{Token: parser.currentToken}
+	stmt.Expression = parser.tryExpression(LOWEST)
+	if stmt.Expression == nil {
+		return stmt, fmt.Errorf("what's wrong")
+	}
+	return stmt, nil
+}
+
+func (parser *Parser) tryExpression(precedence int) ast.IExpr {
+	prefix, ok := parser.prefixParseFunctions[parser.currentToken.Class]
+	if !ok {
+		return nil
+	}
+	leftExpr := prefix()
+	return leftExpr
+}
+
+func (parser *Parser) tryIdentifierExpr() ast.IExpr {
+	identifier := parser.currentToken
+	parser.eatToken()
+	return &ast.Identifier{
+		Token: identifier,
+		Value: identifier.Literal,
+	}
 }

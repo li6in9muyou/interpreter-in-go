@@ -91,3 +91,21 @@ func (r *ReturnStatement) String() string {
 	out.WriteString(";")
 	return out.String()
 }
+
+type ExpressionStatement struct {
+	Token      token.Token
+	Expression IExpr
+}
+
+func (e ExpressionStatement) TokenLiteral() string {
+	return e.Token.Literal
+}
+
+func (e ExpressionStatement) statement() {}
+
+func (e ExpressionStatement) String() string {
+	if e.Expression != nil {
+		return e.Expression.String()
+	}
+	return ""
+}
