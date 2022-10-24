@@ -3,6 +3,7 @@ package parser
 import (
 	"interpreter/ast"
 	"interpreter/lexer"
+	"strings"
 	"testing"
 )
 
@@ -100,13 +101,15 @@ return 993322;
 
 func Test_LogErrors(t *testing.T) {
 	input := `
-lett x = 5;
+let if = else;
 `
 	l := lexer.New(input)
 	p := New(&l)
 	_, _ = p.ParseProgram()
 	errors := p.Errors()
-	if len(errors) != 1 {
+
+	containsIf := strings.Contains(strings.ToLower(errors[0].Error()), "if")
+	if len(errors) != 1 || !containsIf {
 		t.Fatalf(
 			"program.Erros() does not contain 1 error. got=%d",
 			len(errors),
