@@ -104,12 +104,12 @@ lett x = 5;
 `
 	l := lexer.New(input)
 	p := New(&l)
-	program, _ := p.ParseProgram()
+	_, _ = p.ParseProgram()
 	errors := p.Errors()
 	if len(errors) != 1 {
 		t.Fatalf(
 			"program.Erros() does not contain 1 error. got=%d",
-			len(program.Statements),
+			len(errors),
 		)
 	}
 }
