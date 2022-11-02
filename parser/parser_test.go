@@ -285,6 +285,18 @@ func Test_parseOperatorsWithPrecedence(t *testing.T) {
 		expected string
 	}{
 		{
+			"!true",
+			"(!true)",
+		},
+		{
+			"true != false == true",
+			"((true != false) == true)",
+		},
+		{
+			"3 < 5 == false",
+			"((3 < 5) == false)",
+		},
+		{
 			"-a * b",
 			"((-a) * b)",
 		},

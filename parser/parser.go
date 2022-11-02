@@ -65,6 +65,8 @@ func New(lexer *lexer.Lexer) *Parser {
 	parser.addPrefixFn(token.INT, parser.tryIntegerLiteralExpr)
 	parser.addPrefixFn(token.BANG, parser.tryPrefixExpr)
 	parser.addPrefixFn(token.MINUS, parser.tryPrefixExpr)
+	parser.addPrefixFn(token.FALSE, parser.tryBooleanLiteralExpr)
+	parser.addPrefixFn(token.TRUE, parser.tryBooleanLiteralExpr)
 
 	parser.infixParseFunctions = make(map[token.Class]infixParseFunction)
 	parser.addInfixFn(token.PLUS, parser.tryInfixExpr)
@@ -299,4 +301,23 @@ func (parser *Parser) nextTokenPrecedence() int {
 		return p
 	}
 	return LOWEST
+}
+
+func (parser *Parser) tryBooleanLiteralExpr() ast.IExpr {
+	t := parser.currentToken
+	parser.eatToken()
+
+	switch t.Class {
+	case token.FALSE:
+		{
+			return &ast.BooleanLiteral{Token: t, Value: false}
+		}
+	case token.TRUE:
+		{
+			return &ast.BooleanLiteral{Token: t, Value: true}
+		}
+	}
+
+	parser.addError(fmt.Errorf("unknown boolean literal %s", t.Literal))
+	return nil
 }

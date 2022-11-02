@@ -111,6 +111,25 @@ func (e ExpressionStatement) String() string {
 	return ""
 }
 
+type BooleanLiteral struct {
+	Token token.Token
+	Value bool
+}
+
+func (b BooleanLiteral) TokenLiteral() string {
+	if b.Value {
+		return "true"
+	} else {
+		return "false"
+	}
+}
+
+func (b BooleanLiteral) String() string {
+	return b.TokenLiteral()
+}
+
+func (b BooleanLiteral) expression() {}
+
 type IntegerLiteral struct {
 	Token token.Token
 	Value int
