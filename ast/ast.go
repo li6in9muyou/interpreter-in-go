@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"interpreter/token"
 )
 
@@ -125,3 +126,34 @@ func (i IntegerLiteral) String() string {
 
 func (i IntegerLiteral) expression() {
 }
+
+type PrefixExpression struct {
+	Operator token.Token
+	Right    IExpr
+}
+
+func (p PrefixExpression) TokenLiteral() string {
+	return p.Operator.Literal
+}
+
+func (p PrefixExpression) String() string {
+	return fmt.Sprintf("(%s%s)", p.Operator.Literal, p.Right)
+}
+
+func (p PrefixExpression) expression() {}
+
+type InfixExpression struct {
+	Operator token.Token
+	Left     IExpr
+	Right    IExpr
+}
+
+func (i InfixExpression) TokenLiteral() string {
+	return i.Operator.Literal
+}
+
+func (i InfixExpression) String() string {
+	return fmt.Sprintf("(%s %s %s)", i.Left, i.Operator.Literal, i.Right)
+}
+
+func (i InfixExpression) expression() {}

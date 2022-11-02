@@ -21,6 +21,7 @@ type Parser struct {
 	errors               []error
 	prefixParseFunctions map[token.Class]prefixParseFunction
 	infixParseFunctions  map[token.Class]infixParseFunction
+	dictPrecedence       map[token.Class]int
 }
 
 func (parser *Parser) addPrefixFn(class token.Class, function prefixParseFunction) {
@@ -46,12 +47,35 @@ func New(lexer *lexer.Lexer) *Parser {
 	parser := Parser{
 		lexer: lexer,
 	}
+	parser.dictPrecedence = map[token.Class]int{
+		token.EQUAL:    EQUALS,
+		token.UNEQUAL:  EQUALS,
+		token.LT:       LESSGREATER,
+		token.GT:       LESSGREATER,
+		token.PLUS:     SUM,
+		token.MINUS:    SUM,
+		token.SLASH:    PRODUCT,
+		token.ASTERISK: PRODUCT,
+	}
 	parser.currentToken, _ = parser.lexer.NextToken()
 	parser.nextToken, _ = parser.lexer.NextToken()
 
 	parser.prefixParseFunctions = make(map[token.Class]prefixParseFunction)
 	parser.addPrefixFn(token.IDENT, parser.tryIdentifierExpr)
 	parser.addPrefixFn(token.INT, parser.tryIntegerLiteralExpr)
+	parser.addPrefixFn(token.BANG, parser.tryPrefixExpr)
+	parser.addPrefixFn(token.MINUS, parser.tryPrefixExpr)
+
+	parser.infixParseFunctions = make(map[token.Class]infixParseFunction)
+	parser.addInfixFn(token.PLUS, parser.tryInfixExpr)
+	parser.addInfixFn(token.PLUS, parser.tryInfixExpr)
+	parser.addInfixFn(token.MINUS, parser.tryInfixExpr)
+	parser.addInfixFn(token.SLASH, parser.tryInfixExpr)
+	parser.addInfixFn(token.ASTERISK, parser.tryInfixExpr)
+	parser.addInfixFn(token.EQUAL, parser.tryInfixExpr)
+	parser.addInfixFn(token.UNEQUAL, parser.tryInfixExpr)
+	parser.addInfixFn(token.LT, parser.tryInfixExpr)
+	parser.addInfixFn(token.GT, parser.tryInfixExpr)
 	return &parser
 }
 
@@ -146,6 +170,10 @@ func (parser *Parser) currentTokenIs(expected token.Class) bool {
 	return nil == errorTokenMismatch(parser.currentToken, expected)
 }
 
+func (parser *Parser) nextTokenIs(expected token.Class) bool {
+	return nil == errorTokenMismatch(parser.nextToken, expected)
+}
+
 func (parser *Parser) tryAssignOp() error {
 	return parser.errorCurrentTokenMismatch(token.ASSIGN)
 }
@@ -195,6 +223,14 @@ func (parser *Parser) tryExpression(precedence int) ast.IExpr {
 		return nil
 	}
 	leftExpr := prefix()
+	for !parser.nextTokenIs(token.SEMICOLON) && precedence < parser.currentTokenPrecedence() {
+		infix := parser.infixParseFunctions[parser.currentToken.Class]
+		if infix == nil {
+			return leftExpr
+		}
+
+		leftExpr = infix(leftExpr)
+	}
 	return leftExpr
 }
 
@@ -225,4 +261,42 @@ func (parser *Parser) tryIntegerLiteralExpr() ast.IExpr {
 		Token: t,
 		Value: number,
 	}
+}
+
+func (parser *Parser) tryPrefixExpr() ast.IExpr {
+	op := parser.currentToken
+	parser.eatToken()
+	right := parser.tryExpression(PREFIX)
+
+	return &ast.PrefixExpression{
+		Operator: op,
+		Right:    right,
+	}
+}
+
+func (parser *Parser) tryInfixExpr(left ast.IExpr) ast.IExpr {
+	expr := &ast.InfixExpression{
+		Operator: parser.currentToken,
+		Left:     left,
+	}
+
+	precedence := parser.currentTokenPrecedence()
+	parser.eatToken()
+
+	expr.Right = parser.tryExpression(precedence)
+	return expr
+}
+
+func (parser *Parser) currentTokenPrecedence() int {
+	if p, ok := parser.dictPrecedence[parser.currentToken.Class]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+func (parser *Parser) nextTokenPrecedence() int {
+	if p, ok := parser.dictPrecedence[parser.nextToken.Class]; ok {
+		return p
+	}
+	return LOWEST
 }

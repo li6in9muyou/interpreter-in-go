@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"interpreter/ast"
 	"interpreter/lexer"
 	"strings"
@@ -173,5 +174,173 @@ func Test_parseIntegerLiteralExpression(t *testing.T) {
 	if literal.TokenLiteral() != input {
 		t.Errorf("literal.TokenLiteral not %s. got=%s", input,
 			literal.TokenLiteral())
+	}
+}
+
+func Test_parsePrefixExpressions(t *testing.T) {
+	prefixTests := []struct {
+		input        string
+		opLiteral    string
+		integerValue int
+	}{
+		{"!5;", "!", 5},
+		{"-15;", "-", 15},
+	}
+	for _, tt := range prefixTests {
+		l := lexer.New(tt.input)
+		p := New(&l)
+		program, _ := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not *ast.ExpressionStatement. got=%T",
+				program.Statements[0])
+		}
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("stmt is not *ast.PrefixExpression. got=%T", stmt.Expression)
+		}
+		if exp.Operator.Literal != tt.opLiteral {
+			t.Fatalf("exp.Operator is not '%s'. got=%s",
+				tt.opLiteral, exp.Operator.Literal)
+		}
+		if !checkIntegerLiteral(t, exp.Right, tt.integerValue) {
+			return
+		}
+	}
+}
+
+func checkIntegerLiteral(t *testing.T, il ast.IExpr, value int) bool {
+	integ, ok := il.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("il not *ast.IntegerLiteral. got=%T", il)
+		return false
+	}
+	if integ.Value != value {
+		t.Errorf("integ.Value not %d. got=%d", value, integ.Value)
+		return false
+	}
+	if integ.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("integ.TokenLiteral not %d. got=%s", value,
+			integ.TokenLiteral())
+		return false
+	}
+	return true
+}
+
+func Test_parseInfixExpressions(t *testing.T) {
+	infixTests := []struct {
+		input      string
+		leftValue  int
+		operator   string
+		rightValue int
+	}{
+		{"5 + 6;", 5, "+", 6},
+		{"5 - 6;", 5, "-", 6},
+		{"5 * 6;", 5, "*", 6},
+		{"5 / 6;", 5, "/", 6},
+		{"5 > 6;", 5, ">", 6},
+		{"5 < 6;", 5, "<", 6},
+		{"5 == 6;", 5, "==", 6},
+		{"5 != 6;", 5, "!=", 6},
+	}
+	for _, tt := range infixTests {
+		l := lexer.New(tt.input)
+		p := New(&l)
+		program, _ := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not *ast.ExpressionStatement. got=%T",
+				program.Statements[0])
+		}
+		exp, ok := stmt.Expression.(*ast.InfixExpression)
+		if !ok {
+			t.Fatalf("exp is not *ast.InfixExpression. got=%T", stmt.Expression)
+		}
+		if !checkIntegerLiteral(t, exp.Left, tt.leftValue) {
+			return
+		}
+		if exp.Operator.Literal != tt.operator {
+			t.Fatalf("exp.Operator is not '%s'. got=%s",
+				tt.operator, exp.Operator)
+		}
+		if !checkIntegerLiteral(t, exp.Right, tt.rightValue) {
+			return
+		}
+	}
+}
+
+func Test_parseOperatorsWithPrecedence(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"-a * b",
+			"((-a) * b)",
+		},
+		{
+			"!-a",
+			"(!(-a))",
+		},
+		{
+			"a + b + c",
+			"((a + b) + c)",
+		},
+		{
+			"a + b - c",
+			"((a + b) - c)",
+		},
+		{
+			"a * b * c",
+			"((a * b) * c)",
+		},
+		{
+			"a * b / c",
+			"((a * b) / c)",
+		},
+		{
+			"a + b / c",
+			"(a + (b / c))",
+		},
+		{
+			"a + b * c + d / e - f",
+			"(((a + (b * c)) + (d / e)) - f)",
+		},
+		{
+			"3 + 4; -5 * 5",
+			"(3 + 4)((-5) * 5)",
+		},
+		{
+			"5 > 4 == 3 < 4",
+			"((5 > 4) == (3 < 4))",
+		},
+		{
+			"5 < 4 != 3 > 4",
+			"((5 < 4) != (3 > 4))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(&l)
+		program, _ := p.ParseProgram()
+		checkParserErrors(t, p)
+		actual := program.String()
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
 	}
 }
