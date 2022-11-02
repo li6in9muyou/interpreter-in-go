@@ -108,11 +108,11 @@ func (parser *Parser) ParseProgram() (*ast.Program, error) {
 			}
 		default:
 			{
-				stmt, err := parser.tryExpressionStatement()
+				stmt, ok := parser.tryExpressionStatement()
 				parser.statements = append(parser.statements, &stmt)
-				if err != nil {
+				if !ok {
 					return &ast.Program{Statements: parser.statements},
-						fmt.Errorf("%v", err)
+						fmt.Errorf("parser failed")
 				}
 			}
 		}
@@ -210,13 +210,13 @@ const (
 	CALL
 )
 
-func (parser *Parser) tryExpressionStatement() (ast.ExpressionStatement, error) {
+func (parser *Parser) tryExpressionStatement() (ast.ExpressionStatement, bool) {
 	stmt := ast.ExpressionStatement{Token: parser.currentToken}
 	stmt.Expression = parser.tryExpression(LOWEST)
 	if stmt.Expression == nil {
-		return stmt, fmt.Errorf("what's wrong")
+		return stmt, false
 	}
-	return stmt, nil
+	return stmt, true
 }
 
 func (parser *Parser) tryExpression(precedence int) ast.IExpr {
