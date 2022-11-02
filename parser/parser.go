@@ -67,6 +67,7 @@ func New(lexer *lexer.Lexer) *Parser {
 	parser.addPrefixFn(token.MINUS, parser.tryPrefixExpr)
 	parser.addPrefixFn(token.FALSE, parser.tryBooleanLiteralExpr)
 	parser.addPrefixFn(token.TRUE, parser.tryBooleanLiteralExpr)
+	parser.addPrefixFn(token.LPAREN, parser.tryGroupedExpr)
 
 	parser.infixParseFunctions = make(map[token.Class]infixParseFunction)
 	parser.addInfixFn(token.PLUS, parser.tryInfixExpr)
@@ -323,5 +324,19 @@ func (parser *Parser) tryBooleanLiteralExpr() ast.IExpr {
 	}
 
 	parser.addError(fmt.Errorf("unknown boolean literal %s", t.Literal))
+	return nil
+}
+
+func (parser *Parser) tryGroupedExpr() ast.IExpr {
+	parser.eatToken()
+	expr := parser.tryExpression(LOWEST)
+	if parser.currentTokenIs(token.RPAREN) {
+		parser.eatToken()
+		return expr
+	}
+
+	parser.addError(fmt.Errorf(
+		"there is no right parenthesis after %s", expr,
+	))
 	return nil
 }
