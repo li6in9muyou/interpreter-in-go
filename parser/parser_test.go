@@ -285,6 +285,10 @@ func Test_parseOperatorsWithPrecedence(t *testing.T) {
 		expected string
 	}{
 		{
+			"-(1)",
+			"(-(1))",
+		},
+		{
 			"(5+!32)",
 			"(5+(!32))",
 		},
