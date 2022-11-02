@@ -289,8 +289,8 @@ func Test_parseOperatorsWithPrecedence(t *testing.T) {
 			"(-(1))",
 		},
 		{
-			"(5+!32)",
-			"(5+(!32))",
+			"(5+                                 !32)",
+			"(5 + (!32))",
 		},
 		{
 			"1 + -(2 + 3) + 4",
