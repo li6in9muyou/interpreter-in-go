@@ -222,6 +222,10 @@ func (parser *Parser) tryExpressionStatement() (ast.ExpressionStatement, error) 
 func (parser *Parser) tryExpression(precedence int) ast.IExpr {
 	prefix, ok := parser.prefixParseFunctions[parser.currentToken.Class]
 	if !ok {
+		parser.addError(fmt.Errorf(
+			"no prefix parse function for %T%+v",
+			parser.currentToken, parser.currentToken,
+		))
 		return nil
 	}
 	leftExpr := prefix()
