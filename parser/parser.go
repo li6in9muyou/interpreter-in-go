@@ -68,6 +68,8 @@ func New(lexer *lexer.Lexer) *Parser {
 	parser.addPrefixFn(token.FALSE, parser.tryBooleanLiteralExpr)
 	parser.addPrefixFn(token.TRUE, parser.tryBooleanLiteralExpr)
 	parser.addPrefixFn(token.LPAREN, parser.tryGroupedExpr)
+	parser.addPrefixFn(token.IF, parser.tryIfExpr)
+	parser.addPrefixFn(token.LBRACE, parser.tryBlockStatement)
 
 	parser.infixParseFunctions = make(map[token.Class]infixParseFunction)
 	parser.addInfixFn(token.PLUS, parser.tryInfixExpr)
@@ -84,41 +86,39 @@ func New(lexer *lexer.Lexer) *Parser {
 
 func (parser *Parser) ParseProgram() (*ast.Program, error) {
 	for !parser.currentTokenIs(token.EOF) {
-		switch parser.currentToken.Class {
-		case token.LET:
-			{
-				stmt, err := parser.tryLetStatement()
-				parser.statements = append(parser.statements, &stmt)
-				if err != nil {
-					return &ast.Program{Statements: parser.statements},
-						fmt.Errorf("%v", err)
-				}
-			}
-		case token.RETURN:
-			{
-				stmt, err := parser.tryReturnStatement()
-				parser.statements = append(parser.statements, &stmt)
-				if err != nil {
-					return &ast.Program{Statements: parser.statements},
-						fmt.Errorf("%v", err)
-				}
-			}
-		case token.SEMICOLON:
-			{
-				parser.eatToken()
-			}
-		default:
-			{
-				stmt, ok := parser.tryExpressionStatement()
-				parser.statements = append(parser.statements, &stmt)
-				if !ok {
-					return &ast.Program{Statements: parser.statements},
-						fmt.Errorf("parser failed")
-				}
-			}
+		stmt, err := parser.tryStatement()
+		parser.statements = append(parser.statements, stmt)
+		if err != nil {
+			return &ast.Program{Statements: parser.statements},
+				fmt.Errorf("%v", err)
 		}
 	}
 	return &ast.Program{Statements: parser.statements}, nil
+}
+
+func (parser *Parser) tryStatement() (ast.Statement, error) {
+	switch parser.currentToken.Class {
+	case token.LBRACE:
+		{
+			stmt := (parser.tryBlockStatement()).(ast.Statement)
+			return stmt, nil
+		}
+	case token.LET:
+		{
+			stmt, err := parser.tryLetStatement()
+			return &stmt, err
+		}
+	case token.RETURN:
+		{
+			stmt, err := parser.tryReturnStatement()
+			return &stmt, err
+		}
+	default:
+		{
+			stmt, _ := parser.tryExpressionStatement()
+			return &stmt, nil
+		}
+	}
 }
 
 func (parser *Parser) tryLetStatement() (ast.LetStatement, error) {
@@ -339,4 +339,37 @@ func (parser *Parser) tryGroupedExpr() ast.IExpr {
 		"there is no right parenthesis after %s", expr,
 	))
 	return nil
+}
+
+func (parser *Parser) tryIfExpr() ast.IExpr {
+	expr := ast.IfExpression{Token: parser.currentToken}
+
+	parser.eatToken()
+
+	if parser.currentTokenIs(token.LPAREN) {
+		parser.eatToken()
+		expr.Predicate = parser.tryExpression(LOWEST)
+	}
+	parser.eatToken()
+
+	var b = (parser.tryBlockStatement()).(ast.BlockStatement)
+	expr.Then = &b
+	return expr
+}
+
+func (parser *Parser) tryBlockStatement() ast.IExpr {
+	parser.eatToken()
+	block := ast.BlockStatement{
+		OpeningBracket: token.Token{
+			Literal: "{",
+			Class:   token.LBRACE,
+		},
+	}
+	for !parser.currentTokenIs(token.RBRACE) && !parser.currentTokenIs(token.EOF) {
+		stmt, _ := parser.tryStatement()
+		block.Statements = append(block.Statements, stmt)
+		parser.eatToken()
+	}
+	parser.eatToken()
+	return block
 }
