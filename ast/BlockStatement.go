@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"interpreter/token"
 )
 
@@ -21,9 +22,11 @@ func (b BlockStatement) TokenLiteral() string {
 
 func (b BlockStatement) String() string {
 	var out bytes.Buffer
+	out.WriteString("{\n")
 	for _, s := range b.Statements {
-		out.WriteString(s.String())
+		out.WriteString(fmt.Sprintf("  %v\n", s))
 	}
+	out.WriteString("}\n")
 	return out.String()
 }
 
