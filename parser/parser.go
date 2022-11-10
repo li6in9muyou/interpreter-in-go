@@ -144,10 +144,7 @@ func (parser *Parser) tryLetStatement() (ast.LetStatement, error) {
 	}
 	parser.eatToken()
 
-	for !parser.currentTokenIs(token.SEMICOLON) {
-		parser.eatToken()
-	}
-	parser.eatToken()
+	stmt.Value = parser.tryExpression(LOWEST)
 
 	return stmt, nil
 }
