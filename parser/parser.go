@@ -70,6 +70,7 @@ func New(lexer *lexer.Lexer) *Parser {
 	parser.addPrefixFn(token.LPAREN, parser.tryGroupedExpr)
 	parser.addPrefixFn(token.IF, parser.tryIfExpr)
 	parser.addPrefixFn(token.LBRACE, parser.tryBlockStatement)
+	parser.addPrefixFn(token.FUNCTION, parser.tryFunctionLiteral)
 
 	parser.infixParseFunctions = make(map[token.Class]infixParseFunction)
 	parser.addInfixFn(token.PLUS, parser.tryInfixExpr)
