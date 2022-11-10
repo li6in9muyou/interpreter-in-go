@@ -7,7 +7,7 @@ import (
 )
 
 func Test_parseFunctionLiteral(t *testing.T) {
-	input := `fn(x, y) { x + y; }`
+	input := `fun(x, y) { x + y; }`
 	l := lexer.New(input)
 	p := New(&l)
 	program, _ := p.ParseProgram()
