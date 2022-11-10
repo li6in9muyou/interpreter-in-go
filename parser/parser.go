@@ -87,6 +87,9 @@ func New(lexer *lexer.Lexer) *Parser {
 func (parser *Parser) ParseProgram() (*ast.Program, error) {
 	for !parser.currentTokenIs(token.EOF) {
 		stmt, err := parser.tryStatement()
+		if parser.currentTokenIs(token.SEMICOLON) {
+			parser.eatToken()
+		}
 		parser.statements = append(parser.statements, stmt)
 		if err != nil {
 			return &ast.Program{Statements: parser.statements},
