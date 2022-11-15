@@ -119,7 +119,10 @@ func (parser *Parser) tryStatement() (ast.Statement, error) {
 		}
 	default:
 		{
-			stmt, _ := parser.tryExpressionStatement()
+			stmt, ok := parser.tryExpressionStatement()
+			if !ok {
+				return nil, fmt.Errorf("parse statement failed")
+			}
 			return &stmt, nil
 		}
 	}
