@@ -501,7 +501,7 @@ func Test_parseIfExpression(t *testing.T) {
 }
 
 func Test_parseBlockExpression(t *testing.T) {
-	input := `{ let x=6;let y=(x+8)*x;x=x+y;y=2*x;return x<y; }`
+	input := `{ let x=6;let y=(x+8)*x;let x=x+y;let y=2*x;return x<y; }`
 	l := lexer.New(input)
 	p := New(&l)
 	program, _ := p.ParseProgram()
