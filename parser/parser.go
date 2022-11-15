@@ -212,7 +212,6 @@ const (
 	SUM
 	PRODUCT
 	PREFIX
-	CALL
 )
 
 func (parser *Parser) tryExpressionStatement() (ast.ExpressionStatement, bool) {
