@@ -198,9 +198,7 @@ func (parser *Parser) tryReturnStatement() (ast.ReturnStatement, error) {
 	stmt.Token = parser.currentToken
 	parser.eatToken()
 
-	for !parser.currentTokenIs(token.SEMICOLON) {
-		parser.eatToken()
-	}
+	stmt.Value = parser.tryExpression(LOWEST)
 	parser.eatToken()
 
 	return stmt, nil
