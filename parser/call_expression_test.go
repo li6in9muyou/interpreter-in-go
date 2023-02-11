@@ -21,18 +21,18 @@ func Test_parseCallExpression(t *testing.T) {
 		t.Fatalf("stmt is not ast.ExpressionStatement. got=%T",
 			program.Statements[0])
 	}
-	exp, ok := stmt.Expression.(*ast.CallExpression)
+	exp, ok := stmt.Expression.(ast.CallExpression)
 	if !ok {
 		t.Fatalf("stmt.Expression is not ast.CallExpression. got=%T",
 			stmt.Expression)
 	}
-	if !testIdentifier(t, &exp.Function, "add") {
+	if !testIdentifier(t, exp.Function, "add") {
 		return
 	}
 	if len(exp.Parameters) != 3 {
 		t.Fatalf("wrong length of arguments. got=%d", len(exp.Parameters))
 	}
-	testLiteralExpression(t, &exp.Parameters[0], 1)
-	testInfixExpression(t, &exp.Parameters[1], 2, "*", 3)
-	testInfixExpression(t, &exp.Parameters[2], 4, "+", 5)
+	testLiteralExpression(t, exp.Parameters[0], 1)
+	testInfixExpression(t, exp.Parameters[1], 2, "*", 3)
+	testInfixExpression(t, exp.Parameters[2], 4, "+", 5)
 }
