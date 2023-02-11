@@ -56,6 +56,7 @@ func New(lexer *lexer.Lexer) *Parser {
 		token.MINUS:    SUM,
 		token.SLASH:    PRODUCT,
 		token.ASTERISK: PRODUCT,
+		token.LPAREN:   CALL,
 	}
 	parser.currentToken, _ = parser.lexer.NextToken()
 	parser.nextToken, _ = parser.lexer.NextToken()
@@ -82,6 +83,7 @@ func New(lexer *lexer.Lexer) *Parser {
 	parser.addInfixFn(token.UNEQUAL, parser.tryInfixExpr)
 	parser.addInfixFn(token.LT, parser.tryInfixExpr)
 	parser.addInfixFn(token.GT, parser.tryInfixExpr)
+	parser.addInfixFn(token.LPAREN, parser.tryCallExpr)
 	return &parser
 }
 
@@ -212,6 +214,7 @@ const (
 	SUM
 	PRODUCT
 	PREFIX
+	CALL
 )
 
 func (parser *Parser) tryExpressionStatement() (ast.ExpressionStatement, bool) {
