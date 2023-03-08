@@ -5,7 +5,6 @@ import (
 	"interpreter/ast"
 	"interpreter/lexer"
 	"interpreter/token"
-	"strconv"
 )
 
 type (
@@ -130,40 +129,6 @@ func (parser *Parser) tryStatement() (ast.Statement, error) {
 	}
 }
 
-func (parser *Parser) tryLetStatement() (ast.LetStatement, error) {
-	var err error
-	var n ast.Identifier
-	stmt := ast.LetStatement{Name: &n}
-
-	stmt.Token = parser.currentToken
-	parser.eatToken()
-
-	n, err = parser.tryIdentExpr()
-	if err != nil {
-		return stmt, err
-	}
-	parser.eatToken()
-
-	err = parser.tryAssignOp()
-	if err != nil {
-		return stmt, err
-	}
-	parser.eatToken()
-
-	stmt.Value = parser.tryExpression(LOWEST)
-
-	return stmt, nil
-}
-
-func (parser *Parser) tryIdentExpr() (ast.Identifier, error) {
-	err := parser.errorCurrentTokenMismatch(token.IDENT)
-	if err != nil {
-		parser.addError(err)
-		return ast.Identifier{}, err
-	}
-	return ast.Identifier{Token: parser.currentToken, Value: parser.currentToken.Literal}, nil
-}
-
 func errorTokenMismatch(actual token.Token, expected token.Class) error {
 	if actual.Class != expected {
 		return fmt.Errorf("expected class %v, got %v", expected, actual)
@@ -190,18 +155,6 @@ func (parser *Parser) tryAssignOp() error {
 func (parser *Parser) eatToken() {
 	parser.currentToken = parser.nextToken
 	parser.nextToken, _ = parser.lexer.NextToken()
-}
-
-func (parser *Parser) tryReturnStatement() (ast.ReturnStatement, error) {
-	stmt := ast.ReturnStatement{}
-
-	stmt.Token = parser.currentToken
-	parser.eatToken()
-
-	stmt.Value = parser.tryExpression(LOWEST)
-	parser.eatToken()
-
-	return stmt, nil
 }
 
 const (
@@ -245,35 +198,6 @@ func (parser *Parser) tryExpression(precedence int) ast.IExpr {
 	return leftExpr
 }
 
-func (parser *Parser) tryIdentifierExpr() ast.IExpr {
-	identifier := parser.currentToken
-	parser.eatToken()
-	return &ast.Identifier{
-		Token: identifier,
-		Value: identifier.Literal,
-	}
-}
-
-func (parser *Parser) tryIntegerLiteralExpr() ast.IExpr {
-	t := parser.currentToken
-	parser.eatToken()
-
-	number, err := strconv.Atoi(t.Literal)
-	if err != nil {
-		parser.addError(fmt.Errorf(
-			"%s can not be parsed as base 10 integer", t.Literal,
-		))
-		return &ast.IntegerLiteral{
-			Token: token.New(token.ILLEGAL, t.Literal),
-			Value: 0,
-		}
-	}
-	return &ast.IntegerLiteral{
-		Token: t,
-		Value: number,
-	}
-}
-
 func (parser *Parser) tryPrefixExpr() ast.IExpr {
 	op := parser.currentToken
 	parser.eatToken()
@@ -310,70 +234,4 @@ func (parser *Parser) nextTokenPrecedence() int {
 		return p
 	}
 	return LOWEST
-}
-
-func (parser *Parser) tryBooleanLiteralExpr() ast.IExpr {
-	t := parser.currentToken
-	parser.eatToken()
-
-	switch t.Class {
-	case token.FALSE:
-		{
-			return &ast.BooleanLiteral{Token: t, Value: false}
-		}
-	case token.TRUE:
-		{
-			return &ast.BooleanLiteral{Token: t, Value: true}
-		}
-	}
-
-	parser.addError(fmt.Errorf("unknown boolean literal %s", t.Literal))
-	return nil
-}
-
-func (parser *Parser) tryGroupedExpr() ast.IExpr {
-	parser.eatToken()
-	expr := parser.tryExpression(LOWEST)
-	if parser.currentTokenIs(token.RPAREN) {
-		parser.eatToken()
-		return expr
-	}
-
-	parser.addError(fmt.Errorf(
-		"there is no right parenthesis after %s", expr,
-	))
-	return nil
-}
-
-func (parser *Parser) tryIfExpr() ast.IExpr {
-	expr := ast.IfExpression{Token: parser.currentToken}
-
-	parser.eatToken()
-
-	if parser.currentTokenIs(token.LPAREN) {
-		parser.eatToken()
-		expr.Predicate = parser.tryExpression(LOWEST)
-	}
-	parser.eatToken()
-
-	var b = (parser.tryBlockStatement()).(ast.BlockStatement)
-	expr.Then = &b
-	return expr
-}
-
-func (parser *Parser) tryBlockStatement() ast.IExpr {
-	parser.eatToken()
-	block := ast.BlockStatement{
-		OpeningBracket: token.Token{
-			Literal: "{",
-			Class:   token.LBRACE,
-		},
-	}
-	for !parser.currentTokenIs(token.RBRACE) && !parser.currentTokenIs(token.EOF) {
-		stmt, _ := parser.tryStatement()
-		block.Statements = append(block.Statements, stmt)
-		parser.eatToken()
-	}
-	parser.eatToken()
-	return block
 }
