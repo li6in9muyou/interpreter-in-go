@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"interpreter/lexer"
-	"interpreter/token"
+	"interpreter/parser"
 	"io"
 )
 
@@ -32,20 +32,18 @@ func Start(in io.Reader, out io.Writer) {
 			break
 		}
 
-		for lex := lexer.New(line); ; {
-			t, err := lex.NextToken()
-
-			if t.Class == token.EOF {
-				show("Done.\n")
-				break
+		lex := lexer.New(line)
+		p := parser.New(&lex)
+		program, err := p.ParseProgram()
+		if err != nil {
+			show("Your fucked up\n")
+			for _, msg := range p.Errors() {
+				show("\t%s\n", msg)
 			}
-			if err != nil {
-				show("Error: %v\n", err)
-				break
-			}
-
-			show("%+v\n", t)
+		} else {
+			show("%+v\n", program)
 		}
+
 	}
 	_, _ = fmt.Fprintln(out, "Bye!")
 }
