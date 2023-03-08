@@ -7,9 +7,10 @@ import (
 )
 
 type FunctionLiteral struct {
-	Token      token.Token
-	Parameters []Identifier
-	Body       BlockStatement
+	Token        token.Token
+	FunctionName token.Token
+	Parameters   []Identifier
+	Body         BlockStatement
 }
 
 func (f FunctionLiteral) TokenLiteral() string {
@@ -23,6 +24,7 @@ func (f FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 	out.WriteString(f.TokenLiteral())
+	out.WriteString(f.FunctionName.Literal)
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(") ")
