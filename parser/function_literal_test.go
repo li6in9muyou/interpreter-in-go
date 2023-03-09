@@ -26,6 +26,10 @@ func Test_parseFunctionLiteral(t *testing.T) {
 		t.Fatalf("stmt.Expression is not ast.FunctionLiteral. got=%T",
 			stmt.Expression)
 	}
+	if (function.FunctionName.Literal) != "add" {
+		t.Fatalf("function name wrong. want 'add', got='%s'\n",
+			function.FunctionName.Literal)
+	}
 	if len(function.Parameters) != 2 {
 		t.Fatalf("function literal parameters wrong. want 2, got=%d\n",
 			len(function.Parameters))

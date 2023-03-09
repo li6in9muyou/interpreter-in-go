@@ -1,9 +1,8 @@
 package ast
 
 import (
-	"bytes"
+	"fmt"
 	"interpreter/token"
-	"strings"
 )
 
 type FunctionLiteral struct {
@@ -18,18 +17,17 @@ func (f FunctionLiteral) TokenLiteral() string {
 }
 
 func (f FunctionLiteral) String() string {
-	var out bytes.Buffer
 	var params []string
 	for _, p := range f.Parameters {
 		params = append(params, p.String())
 	}
-	out.WriteString(f.TokenLiteral())
-	out.WriteString(f.FunctionName.Literal)
-	out.WriteString("(")
-	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
-	out.WriteString(f.Body.String())
-	return out.String()
+	text := fmt.Sprintf(
+		"fun %s(%s) {\n%s}\n",
+		f.TokenLiteral(),
+		f.FunctionName.Literal,
+		f.Body.String(),
+	)
+	return text
 }
 
 func (f FunctionLiteral) expression() {
